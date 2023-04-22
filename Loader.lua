@@ -52,7 +52,6 @@ getgenv().Parvus = {
         ["1168263273"] = {Name = "Bad Business",              Script = "Games/BB"  },
         ["3360073263"] = {Name = "Bad Business PTR",          Script = "Games/BB"  },
         ["1586272220"] = {Name = "Steel Titans",              Script = "Games/ST"  },
-        ["807930589" ] = {Name = "The Wild West",             Script = "Games/TWW" },
         ["580765040" ] = {Name = "RAGDOLL UNIVERSE",          Script = "Games/RU"  },
         ["187796008" ] = {Name = "Those Who Remain",          Script = "Games/TWR" },
         ["358276974" ] = {Name = "Apocalypse Rising 2",       Script = "Games/AR2" },
