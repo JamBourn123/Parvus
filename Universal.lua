@@ -7,18 +7,16 @@ local Camera = Workspace.CurrentCamera
 local LocalPlayer = PlayerService.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
-local SilentAim,Aimbot,Trigger = nil,false,false
+local SilentAim, Aimbot, Trigger = nil, false, false
 local GravityCorrection = 2
 
 local KnownBodyParts = {
-    {"Head",true},{"HumanoidRootPart",true},
-    {"Torso",false},{"UpperTorso",false},{"LowerTorso",false},
-
-    {"Right Arm",false},{"RightUpperArm",false},{"RightLowerArm",false},{"RightHand",false},
-    {"Left Arm",false},{"LeftUpperArm",false},{"LeftLowerArm",false},{"LeftHand",false},
-
-    {"Right Leg",false},{"RightUpperLeg",false},{"RightLowerLeg",false},{"RightFoot",false},
-    {"Left Leg",false},{"LeftUpperLeg",false},{"LeftLowerLeg",false},{"LeftFoot",false}
+    {"Head", true}, {"HumanoidRootPart", true},
+    {"Torso", false}, {"UpperTorso", false}, {"LowerTorso", false},
+    {"Right Arm", false}, {"RightUpperArm", false}, {"RightLowerArm", false}, {"RightHand", false},
+    {"Left Arm", false}, {"LeftUpperArm", false}, {"LeftLowerArm", false}, {"LeftHand", false},
+    {"Right Leg", false}, {"RightUpperLeg", false}, {"RightLowerLeg", false}, {"RightFoot", false},
+    {"Left Leg", false}, {"LeftUpperLeg", false}, {"LeftLowerLeg", false}, {"LeftFoot", false}
 }
 
 local Window = Parvus.Utilities.UI:Window({
@@ -213,92 +211,68 @@ Parvus.Utilities.Drawing.FOVCircle("Aimbot",Window.Flags)
 Parvus.Utilities.Drawing.FOVCircle("Trigger",Window.Flags)
 Parvus.Utilities.Drawing.FOVCircle("SilentAim",Window.Flags)
 
-local WallCheckParams = RaycastParams.new()
-WallCheckParams.FilterType = Enum.RaycastFilterType.Blacklist
-WallCheckParams.IgnoreWater = true
+local function Raycast(Origin, Direction, Filter)
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = Filter
+    params.IgnoreWater = true
+    return workspace:Raycast(Origin, Direction, params)
+end
 
-local function Raycast(Origin,Direction,Filter)
-    WallCheckParams.FilterDescendantsInstances = Filter
-    return Workspace:Raycast(Origin,Direction,WallCheckParams)
+local function InEnemyTeam(Enabled, Player)
+    return not Enabled or LocalPlayer.Team ~= Player.Team
 end
-local function InEnemyTeam(Enabled,Player)
+
+local function IsDistanceLimited(Enabled, Distance, Limit)
+    return not Enabled or Distance >= Limit
+end
+
+local function IsVisible(Enabled, Origin, Position, Character)
     if not Enabled then return true end
-    return LocalPlayer.Team ~= Player.Team
+    return not Raycast(Origin, Position - Origin, { Character, LocalPlayer.Character })
 end
-local function IsDistanceLimited(Enabled,Distance,Limit)
-    if not Enabled then return end
-    return Distance >= Limit
-end
-local function IsVisible(Enabled,Origin,Position,Character)
-    if not Enabled then return true end
-    return not Raycast(Origin,Position - Origin,
-    {Character,LocalPlayer.Character})
-end
-local function CalculateTrajectory(Origin,Velocity,Time,Gravity)
+
+local function CalculateTrajectory(Origin, Velocity, Time, Gravity)
     return Origin + Velocity * Time + Gravity * Time * Time / GravityCorrection
 end
-local function GetClosest(Enabled,
-    TeamCheck,VisibilityCheck,DistanceCheck,
-    DistanceLimit,FieldOfView,Priority,BodyParts,
-    PredictionEnabled,ProjectileSpeed,ProjectileGravity
-)
 
+local function GetClosest(Enabled, TeamCheck, VisibilityCheck, DistanceCheck, DistanceLimit, FieldOfView, Priority, BodyParts, PredictionEnabled, ProjectileSpeed, ProjectileGravity)
     if not Enabled then return end
-    local CameraPosition,Closest = Camera.CFrame.Position,nil
-    for Index,Player in ipairs(PlayerService:GetPlayers()) do
-        if Player == LocalPlayer then continue end
+    local CameraPosition, Closest = Camera.CFrame.Position, nil
 
-        local Character = Player.Character if not Character then continue end
-
-        if not InEnemyTeam(TeamCheck,Player) then continue end
-
-        local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-        if not Humanoid then continue end if Humanoid.Health <= 0 then continue end
-
-        for Index,BodyPart in ipairs(BodyParts) do
-            BodyPart = Character:FindFirstChild(BodyPart)
-            if not BodyPart then continue end
-
-            local BodyPartPosition = BodyPart.Position
-            local Distance = (BodyPartPosition - CameraPosition).Magnitude
-            if IsDistanceLimited(DistanceCheck,Distance,DistanceLimit) then continue end
-            if not IsVisible(VisibilityCheck,CameraPosition,BodyPartPosition,Character) then continue end
-
-            ProjectileGravity = Vector3.new(0,ProjectileGravity,0)
-            BodyPartPosition = PredictionEnabled and CalculateTrajectory(BodyPartPosition,
-            BodyPart.AssemblyLinearVelocity,Distance / ProjectileSpeed,ProjectileGravity) or BodyPartPosition
-            local ScreenPosition,OnScreen = Camera:WorldToViewportPoint(BodyPartPosition)
-            if not OnScreen then continue end
-
-            local Magnitude = (Vector2.new(ScreenPosition.X,ScreenPosition.Y) - UserInputService:GetMouseLocation()).Magnitude
-            if Magnitude >= FieldOfView then continue end
-
-            if Priority == "Random" then
-                Priority = KnownBodyParts[math.random(#KnownBodyParts)][1]
-                BodyPart = Character:FindFirstChild(Priority)
-                if not BodyPart then continue end
-
-                BodyPartPosition = BodyPart.Position
-                BodyPartPosition = PredictionEnabled and CalculateTrajectory(BodyPartPosition,
-                BodyPart.AssemblyLinearVelocity,Distance / ProjectileSpeed,ProjectileGravity) or BodyPartPosition
-                ScreenPosition,OnScreen = Camera:WorldToViewportPoint(BodyPartPosition)
-            elseif Priority ~= "Closest" then
-                BodyPart = Character:FindFirstChild(Priority)
-                if not BodyPart then continue end
-
-                BodyPartPosition = BodyPart.Position
-                BodyPartPosition = PredictionEnabled and CalculateTrajectory(BodyPartPosition,
-                BodyPart.AssemblyLinearVelocity,Distance / ProjectileSpeed,ProjectileGravity) or BodyPartPosition
-                ScreenPosition,OnScreen = Camera:WorldToViewportPoint(BodyPartPosition)
+    for _, Player in ipairs(PlayerService:GetPlayers()) do
+        if Player ~= LocalPlayer and InEnemyTeam(TeamCheck, Player) then
+            local Character = Player.Character
+            if Character then
+                local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+                if Humanoid and Humanoid.Health > 0 then
+                    for _, BodyPartName in ipairs(BodyParts) do
+                        local BodyPart = Character:FindFirstChild(BodyPartName)
+                        if BodyPart then
+                            local BodyPartPosition = BodyPart.Position
+                            local Distance = (BodyPartPosition - CameraPosition).Magnitude
+                            if not IsDistanceLimited(DistanceCheck, Distance, DistanceLimit) and IsVisible(VisibilityCheck, CameraPosition, BodyPartPosition, Character) then
+                                ProjectileGravity = Vector3.new(0, ProjectileGravity, 0)
+                                BodyPartPosition = PredictionEnabled and CalculateTrajectory(BodyPartPosition, BodyPart.AssemblyLinearVelocity, Distance / ProjectileSpeed, ProjectileGravity) or BodyPartPosition
+                                local ScreenPosition, OnScreen = Camera:WorldToViewportPoint(BodyPartPosition)
+                                if OnScreen then
+                                    local Magnitude = (Vector2.new(ScreenPosition.X, ScreenPosition.Y) - UserInputService:GetMouseLocation()).Magnitude
+                                    if Magnitude < FieldOfView then
+                                        FieldOfView, Closest = Magnitude, { Player, Character, BodyPart, ScreenPosition }
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
             end
-
-            FieldOfView,Closest = Magnitude,{Player,Character,BodyPart,ScreenPosition}
         end
     end
 
     return Closest
 end
-local function AimAt(Hitbox,Sensitivity)
+
+local function AimAt(Hitbox, Sensitivity)
     if not Hitbox then return end
     local MouseLocation = UserInputService:GetMouseLocation()
 
@@ -308,53 +282,60 @@ local function AimAt(Hitbox,Sensitivity)
     )
 end
 
-local OldIndex = nil
-OldIndex = hookmetamethod(game,"__index",function(Self,Index)
-    if checkcaller() then return OldIndex(Self,Index) end
+local function shouldSilentAim()
+    return SilentAim and math.random(100) <= Window.Flags["SilentAim/HitChance"]
+end
 
-    if SilentAim and math.random(100) <= Window.Flags["SilentAim/HitChance"] then
-        local Mode = Window.Flags["SilentAim/Mode"]
-        if Self == Mouse then
-            if Index == "Target" and table.find(Mode,Index) then
-                return SilentAim[3]
-            elseif Index== "Hit" and table.find(Mode,Index) then
-                return SilentAim[3].CFrame
-            end
+local function hookIndex(Self, Index)
+    if checkcaller() or not shouldSilentAim() then
+        return OldIndex(Self, Index)
+    end
+
+    local Mode = Window.Flags["SilentAim/Mode"]
+    if Self == Mouse then
+        if Index == "Target" and table.find(Mode, Index) then
+            return SilentAim[3]
+        elseif Index == "Hit" and table.find(Mode, Index) then
+            return SilentAim[3].CFrame
         end
     end
 
-    return OldIndex(Self,Index)
-end)
-local OldNamecall = nil
-OldNamecall = hookmetamethod(game,"__namecall",function(Self,...)
-    if checkcaller() then return OldNamecall(Self,...) end
+    return OldIndex(Self, Index)
+end
 
-    if SilentAim and math.random(100) <= Window.Flags["SilentAim/HitChance"] then
-        local Args,Method,Mode = {...},getnamecallmethod(),Window.Flags["SilentAim/Mode"]
+local function hookNamecall(Self, ...)
+    if checkcaller() or not shouldSilentAim() then
+        return OldNamecall(Self, ...)
+    end
 
-        if Self == Workspace then
-            if Method == "Raycast" and table.find(Mode,Method) then
-                Args[2] = SilentAim[3].Position - Args[1]
-                return OldNamecall(Self,unpack(Args))
-            elseif (Method == "FindPartOnRayWithIgnoreList" and table.find(Mode,Method))
-            or (Method == "FindPartOnRayWithWhitelist" and table.find(Mode,Method))
-            or (Method == "FindPartOnRay" and table.find(Mode,Method)) then
-                Args[1] = Ray.new(Args[1].Origin,SilentAim[3].Position - Args[1].Origin)
-                return OldNamecall(Self,unpack(Args))
-            end
-        elseif Self == Camera then
-            if (Method == "ScreenPointToRay" and table.find(Mode,Method))
-            or (Method == "ViewportPointToRay" and table.find(Mode,Method)) then
-                return Ray.new(SilentAim[3].Position,SilentAim[3].Position - Camera.CFrame.Position)
-            elseif (Method == "WorldToScreenPoint" and table.find(Mode,Method))
-            or (Method == "WorldToViewportPoint" and table.find(Mode,Method)) then
-                Args[1] = SilentAim[3].Position return OldNamecall(Self,unpack(Args))
-            end
+    local Args, Method, Mode = { ... }, getnamecallmethod(), Window.Flags["SilentAim/Mode"]
+
+    if Self == Workspace then
+        if (Method == "Raycast" and table.find(Mode, Method)) then
+            Args[2] = SilentAim[3].Position - Args[1]
+            return OldNamecall(Self, unpack(Args))
+        elseif (Method == "FindPartOnRayWithIgnoreList" and table.find(Mode, Method))
+            or (Method == "FindPartOnRayWithWhitelist" and table.find(Mode, Method))
+            or (Method == "FindPartOnRay" and table.find(Mode, Method)) then
+            Args[1] = Ray.new(Args[1].Origin, SilentAim[3].Position - Args[1].Origin)
+            return OldNamecall(Self, unpack(Args))
+        end
+    elseif Self == Camera then
+        if (Method == "ScreenPointToRay" and table.find(Mode, Method))
+            or (Method == "ViewportPointToRay" and table.find(Mode, Method)) then
+            return Ray.new(SilentAim[3].Position, SilentAim[3].Position - Camera.CFrame.Position)
+        elseif (Method == "WorldToScreenPoint" and table.find(Mode, Method))
+            or (Method == "WorldToViewportPoint" and table.find(Mode, Method)) then
+            Args[1] = SilentAim[3].Position
+            return OldNamecall(Self, unpack(Args))
         end
     end
 
-    return OldNamecall(Self,...)
-end)
+    return OldNamecall(Self, ...)
+end
+
+local OldIndex = hookmetamethod(game, "__index", hookIndex)
+local OldNamecall = hookmetamethod(game, "__namecall", hookNamecall)
 
 Parvus.Utilities.NewThreadLoop(0,function()
     if not (Aimbot or Window.Flags["Aimbot/AlwaysEnabled"]) then return end
