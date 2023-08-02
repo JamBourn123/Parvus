@@ -1,3 +1,77 @@
+### Update 1/08/23
+```markdown
+# BRM5
+* NPC ESP enabled
+* Intel ESP enabled
++ no stamina loss added
+* team check fixed
+* instant hit fixed
+
+# Drawing Module
+* some changes that should in theory dont crash roblox on execute
+- temporary removed chams (highlights)
+```
+### Update 31/07/23
+```markdown
+# AR2
+* disabled (high ban risk)
+
+# BB
+* fixed
+
+# BRM5
+* NPC ESP disabled
+* Intel ESP disabled
+* recoil reverted
+* fixed
+
+# RU
+* fixed
+```
+### Update 01/05/23
+```markdown
+# AR2
+* added back melee aura
+* increased dist limit
+* misc changes
+
+# BB
+* new get closest target function (need tests)
+* fixed for newest bb version
+* misc changes
+
+# Drawing
+* misc changes
+
+# Physics
+* misc changes
+```
+### Update 14/04/23
+```markdown
+# AR2
+* disabled melee aura (detected)
+
+# Global
+* refactored utilities module
++ new move to dir function (new fly control system)
+```
+### Update 01/04/23
+```markdown
+# AR2
+* fixed silent aim issues
++ new prediction module
+
+# Bad Business (trash game lmfao)
++ new prediction module
++ no more bans (only crashes sorry)
+* optimized some things
+
+# TWR
+* aimbot/silent aim fixed?
+
+# Global
+* other minor fixes
+```
 ### Update 23/03/23
 ```markdown
 # AR2

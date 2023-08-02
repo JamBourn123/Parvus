@@ -8,7 +8,7 @@ local Lighting = game:GetService("Lighting")
 --local CoreGui = game:GetService("CoreGui")
 local Stats = game:GetService("Stats")
 
-local MainModule = {DefaultLighting = {}}
+local Utility = {DefaultLighting = {}}
 
 local Camera = Workspace.CurrentCamera
 local LocalPlayer = PlayerService.LocalPlayer
@@ -53,7 +53,7 @@ Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
     Camera = Workspace.CurrentCamera
 end)
 
---[[function MainModule.HideObject(Object)
+--[[function Utility.HideObject(Object)
     if gethui then Object.Parent = gethui() return end
     if syn and syn.protect_gui then
         syn.protect_gui(Object)
@@ -62,7 +62,7 @@ end)
     end
 end]]
 
-function MainModule.SetupFPS()
+function Utility.SetupFPS()
     local StartTime,TimeTable,LastTime = os.clock(),{},nil
     return function() LastTime = os.clock()
         for Index = #TimeTable, 1, -1 do
@@ -73,14 +73,14 @@ function MainModule.SetupFPS()
         or #TimeTable / (os.clock() - StartTime)
     end
 end
-function MainModule.MovementToDirection()
+function Utility.MovementToDirection()
     local LookVector,RightVector = GetFlatVector(Camera.CFrame)
     local ZMovement = LookVector * (Movement.Forward - Movement.Backward)
     local XMovement = RightVector * (Movement.Right - Movement.Left)
     local YMovement = YVector * (Movement.Up - Movement.Down)
     return GetUnit(ZMovement + XMovement + YMovement)
 end
-function MainModule.NewThreadLoop(Wait,Function)
+function Utility.NewThreadLoop(Wait,Function)
     task.spawn(function()
         while true do
             local Delta = task.wait(Wait)
@@ -93,7 +93,7 @@ function MainModule.NewThreadLoop(Wait,Function)
         end
     end)
 end
-function MainModule.FixUpValue(fn,hook,global)
+function Utility.FixUpValue(fn,hook,global)
     if global then
         old = hookfunction(fn,function(...)
             return hook(old,...)
@@ -106,7 +106,23 @@ function MainModule.FixUpValue(fn,hook,global)
     end
 end
 
-function MainModule.ReJoin()
+function Utility.InitAutoLoad(Window)
+    Window:AutoLoadConfig("Parvus")
+    Window:SetValue("UI/Enabled",
+    Window.Flags["UI/OOL"])
+end
+function Utility.SetupWatermark(Self,Window)
+    local GetFPS = Self:SetupFPS()
+    RunService.Heartbeat:Connect(function()
+        if Window.Watermark.Enabled then
+            Window.Watermark.Title = string.format(
+                "Parvus Hub    %s    %i FPS    %i MS",
+                os.date("%X"),GetFPS(),math.round(Ping:GetValue())
+            )
+        end
+    end)
+end
+function Utility.ReJoin()
     if #PlayerService:GetPlayers() <= 1 then
         LocalPlayer:Kick("\nParvus Hub\nRejoining...")
         task.wait(0.5) TeleportService:Teleport(game.PlaceId)
@@ -114,7 +130,7 @@ function MainModule.ReJoin()
         TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId)
     end
 end
-function MainModule.ServerHop()
+function Utility.ServerHop()
     local DataDecoded,Servers = HttpService:JSONDecode(game:HttpGet(
         "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/0?sortOrder=2&excludeFullGames=true&limit=100"
     )).data,{}
@@ -135,7 +151,7 @@ function MainModule.ServerHop()
         })
     end
 end
-function MainModule.JoinDiscord()
+function Utility.JoinDiscord()
     Request({
         ["Url"] = "http://localhost:6463/rpc?v=1",
         ["Method"] = "POST",
@@ -164,7 +180,7 @@ end
   - Halloween = 0.0836667,1,1,0,false
 ]]
 
-function MainModule.SettingsSection(Self,Window,UIKeybind,CustomMouse)
+function Utility.SettingsSection(Self,Window,UIKeybind,CustomMouse)
     local OptionsTab = Window:Tab({Name = "Options"}) do
         local MenuSection = OptionsTab:Section({Name = "Menu",Side = "Left"}) do
             local UIToggle = MenuSection:Toggle({Name = "UI Enabled",Flag = "UI/Enabled",IgnoreFlag = true,
@@ -185,7 +201,7 @@ function MainModule.SettingsSection(Self,Window,UIKeybind,CustomMouse)
             MenuSection:Button({Name = "Rejoin",Callback = Self.ReJoin})
             MenuSection:Button({Name = "Server Hop",Callback = Self.ServerHop})
             MenuSection:Button({Name = "Copy Lua Invite",Callback = function()
-                setclipboard("game:GetService(\"TeleportService\"):TeleportToPlaceInstance(" .. game.PlaceId .. ", \"" .. game.JobId .. "\");")
+                setclipboard("game:GetService(\"TeleportService\"):TeleportToPlaceInstance(" .. game.PlaceId .. ", \"" .. game.JobId .. "\")")
             end})
             MenuSection:Button({Name = "Copy JS Invite",Callback = function()
                 setclipboard("Roblox.GameLauncher.joinGameInstance(" .. game.PlaceId .. ", \"" .. game.JobId .. "\");")
@@ -254,22 +270,23 @@ function MainModule.SettingsSection(Self,Window,UIKeybind,CustomMouse)
             CrosshairSection:Slider({Name = "Gap",Flag = "Crosshair/Gap",Min = 0,Max = 10,Value = 2,Unit = "px",Wide = true})
         end
         local CreditsSection = OptionsTab:Section({Name = "Credits",Side = "Right"}) do
-            CreditsSection:Label({Text = "Made by AlexR32#0157"})
-            CreditsSection:Label({Text = "(I dont take friend requests,\nfind me on my server)"})
+            CreditsSection:Label({Text = "Made by AlexR32 @ discord.com"})
+            CreditsSection:Label({Text = "I dont take friend requests\nfind me on my server: sYqDpbPYb7"})
             CreditsSection:Divider({Text = "Special thanks to"})
-            CreditsSection:Label({Text = "Jan for awesome Background Patterns"})
-            CreditsSection:Label({Text = "Infinite Yield Team for Server Hop and Rejoin"})
-            CreditsSection:Label({Text = "Blissful for Offscreen Arrows"})
-            CreditsSection:Label({Text = "coasts for Universal ESP"})
-            CreditsSection:Label({Text = "mickeyrbx for CalculateBox"})
-            CreditsSection:Label({Text = "Kiriot22 for Anti plugin crash"})
-            CreditsSection:Label({Text = "el3tric for Bracket V2"})
+            CreditsSection:Label({Text = "Jan @ v3rmillion.net\nBackground patterns"})
+            --CreditsSection:Label({Text = "Infinite Yield Team\nServer Hop and Rejoin"})
+            CreditsSection:Label({Text = "CornCatCornDog @ v3rmillion.net\nOffscreen Arrows"})
+            --CreditsSection:Label({Text = "coasts @ v3rmillion.net\nUniversal ESP"})
+            CreditsSection:Label({Text = "mickeyrbx @ v3rmillion.net\nCalculateBox"})
+            CreditsSection:Label({Text = "Kiriot22 @ v3rmillion.net\nAnti plugin crash"})
+            CreditsSection:Label({Text = "el3tric @ v3rmillion.net\nBracket V2"})
             CreditsSection:Label({Text = "and much more people\nbehind this project"})
             CreditsSection:Label({Text = "❤️ ❤️ ❤️ ❤️"})
         end
     end
 end
-function MainModule.LightingSection(Self,Tab,Side)
+
+function Utility.LightingSection(Self,Tab,Side)
     local LightingSection = Tab:Section({Name = "Lighting",Side = Side}) do
         LightingSection:Toggle({Name = "Enabled",Flag = "Lighting/Enabled",Value = false,
         Callback = function(Bool) if Bool then return end
@@ -297,24 +314,7 @@ function MainModule.LightingSection(Self,Tab,Side)
         Callback = function(Value) sethiddenproperty(Terrain,"Decoration",Value) end})
     end
 end
-function MainModule.SetupWatermark(Self,Window)
-    local GetFPS = Self:SetupFPS()
-    RunService.Heartbeat:Connect(function()
-        if Window.Watermark.Enabled then
-            Window.Watermark.Title = string.format(
-                "Parvus Hub    %s    %i FPS    %i MS",
-                os.date("%X"),GetFPS(),math.round(Ping:GetValue())
-            )
-        end
-    end)
-end
-function MainModule.InitAutoLoad(Window)
-    Window:AutoLoadConfig("Parvus")
-    Window:SetValue("UI/Enabled",
-    Window.Flags["UI/OOL"])
-end
-
-function MainModule.SetupLighting(Self,Flags)
+function Utility.SetupLighting(Self,Flags)
     Self.DefaultLighting = {
         Ambient = Lighting.Ambient,
         Brightness = Lighting.Brightness,
@@ -371,4 +371,4 @@ function MainModule.SetupLighting(Self,Flags)
     end)
 end
 
-return MainModule
+return Utility
